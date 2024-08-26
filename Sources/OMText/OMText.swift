@@ -5,6 +5,7 @@
 
 import Foundation
 import SwiftUI
+import OMTextObjC
 //import STTextView
 
 
@@ -57,12 +58,28 @@ public enum CursorMovement {
 
 #if os(iOS)
 public protocol OMTextDelegate: UITextViewDelegate {
-    func didChangeSelection(_ range: NSRange, text: NSAttributedString)
-    func didChange(_ text: NSAttributedString)
-    func shouldChange(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool
-    func didTapLink(in range: NSRange)
+    func didChangeSelection(textView: UITextView,  range: NSRange, text: NSAttributedString)
+    func didChangeText(textView: UITextView,  text: NSAttributedString)
+    func shouldChange(_ textView: UITextView,
+                      shouldChangeTextIn range: NSRange,
+                      replacementText text: String) -> Bool
+    
+    func processChange(_ textStorage: OMTextStorage)
+    
     func didStartEditing()
     func didEndEditing(_ text: NSAttributedString)
+    
+    func didStartFinding()
+    func didEndFinding()
+
+    func didChangeScroll(_ point: CGPoint)
+
+    func shouldOpenURL( _ URL: URL,
+                        in textView: UITextView,
+                        range: NSRange,
+                        interaction: UITextItemInteraction) -> Bool
+    
+    
 }
 
 public extension OMTextDelegate {
@@ -77,7 +94,10 @@ public extension OMTextDelegate {
     func didStartEditing() {}
     func didEndEditing(_ text: NSAttributedString) {}
 
+    func didStartFinding() {}
+    func didEndFinding() {}
     
+    func didChangeScroll(_ point: CGPoint) {}
 }
 
 import Combine
@@ -98,184 +118,7 @@ public struct OMTextState: Equatable {
     public var wordCount = 0
 }
 
-@available(iOS 16.0, *)
-public class OMTextManager: NSObject {
-    public override init() {
-        super.init()
-        
-        changeThrottle
-            .debounce(for: 0.4, scheduler: RunLoop.main)
-            .sink(receiveValue: processChange)
-            .store(in: &cancellables)
-        
-    }
-    
-    public lazy var findInteraction = UIFindInteraction(sessionDelegate: self)
-    
-    public lazy var view: UITextView = {
-        let view = UITextView()
-        view.delegate = self
-        view.addInteraction(findInteraction)
-        if #available(iOS 16.0, *) {
-            view.isFindInteractionEnabled = true
-            
-        } else {
-            // Fallback on earlier versions
-        }
-        view.font = .systemFont(ofSize: 18)
-        return view
-    }()
-    
-    public let state = CurrentValueSubject<OMTextState, Never>(OMTextState())
-    let changeThrottle = PassthroughSubject<NSAttributedString, Never>()
-    var cancellables = Set<AnyCancellable>()
-    
-    
-    private func processChange(text: NSAttributedString) {
-        state.value.wordCount = text.string.numberOfWords
-    }
-    
-    
-    
-    public func undo() {
-        
-        guard let undoManager = view.undoManager else { return }
-        if undoManager.canUndo {
-            undoManager.undo()
-        }
-    }
-    
-    public func redo() {
-        guard let undoManager =  view.undoManager else { return }
-        if undoManager.canRedo {
-            undoManager.redo()
-        }
-        
-    }
-    public func move(cursor: CursorMovement) {
-        guard view.isFirstResponder,
-             let currentPosition = view.cursorPosition() else { return }
-       
-       let newPosition: UITextPosition? = {
-           switch cursor {
-           case .down:
-               let cursorRect = view.caretRect(for: currentPosition)
-               var adjustedCursorPoint = CGPoint(x: cursorRect.maxX, y: cursorRect.maxY)
-               return view.closestPosition(to: adjustedCursorPoint)
-           case .up:
-               let cursorRect = view.caretRect(for: currentPosition)
-               var adjustedCursorPoint = CGPoint(x: cursorRect.maxX, y: cursorRect.minY)
-               return view.closestPosition(to: adjustedCursorPoint)
-           case .left:
-               return view.tokenizer.position(from: currentPosition,
-                                                           toBoundary: .word,
-                                                           inDirection: .layout(.left))
-           case .right:
-               return view.tokenizer.position(from: currentPosition,
-                                                           toBoundary: .word,
-                                                           inDirection: .layout(.right))
-           }
-       }()
-       
-       if let newPosition,
-           newPosition != currentPosition,
-          let textRange = view.textRange(from: newPosition, to: newPosition) {
-           view.selectedTextRange = textRange
-           scrollToCursor()
-       }
-   }
 
-    
-    
-    private func scrollToCursor() {
-        if let currentPosition = view.cursorPosition()  {
-            let cursorRect = view.caretRect(for: currentPosition)
-            
-            view.scrollRectToVisible(cursorRect, animated: true)
-        }
-    }
-    
-    
-}
-
-
-
-
-@available(iOS 16.0, *)
-extension OMTextManager: OMFindSessionDelegate, UIFindInteractionDelegate {
-   
-    public func findInteraction(_ interaction: UIFindInteraction, sessionFor view: UIView) -> UIFindSession? {
-        self.view.findInteraction(interaction, sessionFor: view)
-//        OMFindSession(delegate: self)
-//        UITextSearchingFindSession(searchableObject: self)
-    }
-    
-    @available(iOS 16.0, *)
-    public func findInteraction(_ interaction: UIFindInteraction, didBegin session: UIFindSession) {
-        DispatchQueue.main.async {
-            self.state.value.isFinding = true
-        }
-    }
-    
-    @available(iOS 16.0, *)
-    public func findInteraction(_ interaction: UIFindInteraction, didEnd session: UIFindSession) {
-        DispatchQueue.main.async {
-            self.state.value.isFinding = false
-        }
-    }
-}
-
-@available(iOS 16.0, *)
-extension OMTextManager: UITextViewDelegate {
-    
-    public func textViewDidChangeSelection(_ textView: UITextView) {
-        let start = textView.selectedRange.location
-        
-        let startIsBeginning = start == 0
-        let endIsFinal = start == textView.text.count
-       
-        print(start, textView.text.count, startIsBeginning, endIsFinal)
-        if state.value.canMoveLeft != !startIsBeginning {
-            state.value.canMoveLeft = !startIsBeginning
-        }
-        if state.value.canMoveUp != !startIsBeginning {
-            state.value.canMoveUp =  !startIsBeginning
-        }
-        if state.value.canMoveRight != !endIsFinal {
-            state.value.canMoveRight =  !endIsFinal
-        }
-        if state.value.canMoveDown != !endIsFinal {
-            state.value.canMoveDown =  !endIsFinal
-        }
-    }
-    
-    public func textViewDidChange(_ textView: UITextView) {
-        changeThrottle.send(textView.attributedText)
-        if let undoManager = textView.undoManager {
-            if  undoManager.canRedo != state.value.canRedo {
-                state.value.canRedo = undoManager.canRedo
-            }
-            
-            if  undoManager.canUndo != state.value.canUndo {
-                state.value.canUndo = undoManager.canUndo
-            }
-        }
-    }
-    
-    public func textViewDidBeginEditing(_ textView: UITextView) {
-        DispatchQueue.main.async { 
-            self.state.value.isEditing = true
-        }
-    }
-    
-    public func textViewDidEndEditing(_ textView: UITextView) {
-        DispatchQueue.main.async {
-            self.state.value.isEditing = false
-        }
-    }
-    
-
-}
 
 
 
