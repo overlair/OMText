@@ -21,17 +21,26 @@ import OMTextObjC
 @available(iOS 16.0, *)
 public class OMUITextView: UITextView {
     var textDelegate: OMTextDelegate?
+    var isFinding = false
+    
     public override func findInteraction(_ interaction: UIFindInteraction, didBegin session: UIFindSession) {
         super.findInteraction(interaction, didBegin: session)
         textDelegate?.didStartFinding()
+        isFinding = true
     }
     
     
-    public override func findInteraction(_ interaction: UIFindInteraction, didEnd session: UIFindSession) {
+    public override func findInteraction(_ interaction: UIFindInteraction,
+                                         didEnd session: UIFindSession) {
 //        interaction.dismissFindNavigator()
 //        super.findInteraction(interaction, didEnd: session)
-        textDelegate?.didEndFinding()
+        if isFinding {
+            isFinding = false
+            textDelegate?.didEndFinding()
+        }        
     }
+    
+    
     
 }
 
