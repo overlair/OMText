@@ -196,7 +196,6 @@ extension OMTextManager: UITextViewDelegate {
     
 
     public func textViewDidChange(_ textView: UITextView) {
-        print("TEXT VIEW DID CHANGE", view.textStorage is OMTextStorage, textView.text)
         delegate?.didChangeText(textView: textView, text: textView.attributedText)
     }
    
