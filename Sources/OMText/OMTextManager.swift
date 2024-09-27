@@ -18,34 +18,9 @@ import OMTextObjC
 
 
 
-@available(iOS 16.0, *)
-public class OMUITextView: UITextView {
-    var textDelegate: OMTextDelegate?
-    var isFinding = false
-    
-    public override func findInteraction(_ interaction: UIFindInteraction, didBegin session: UIFindSession) {
-        super.findInteraction(interaction, didBegin: session)
-        textDelegate?.didStartFinding()
-        isFinding = true
-    }
-    
-    
-    public override func findInteraction(_ interaction: UIFindInteraction,
-                                         didEnd session: UIFindSession) {
-//        interaction.dismissFindNavigator()
-//        super.findInteraction(interaction, didEnd: session)
-        if isFinding {
-            isFinding = false
-            textDelegate?.didEndFinding()
-        }        
-    }
-    
-    
-    
-}
-
 
 @available(iOS 16.0, *)
+//@available(macOS 10.0, *)
 public class OMTextManager: NSObject {
     public override init() {
         
@@ -55,14 +30,13 @@ public class OMTextManager: NSObject {
         let container = NSTextContainer()
         layout.addTextContainer(container)
         
-        self.view = OMUITextView(frame: .zero, textContainer: container)
+        self.view = OMTextView(frame: .zero, textContainer: container)
         self.textStorage = storage
         
         super.init()
         
         view.delegate = self
-        view.isFindInteractionEnabled = true
-        
+                
         //        view.textStorage.removeLayoutManager(view.layoutManager)
 //        textStorage.addLayoutManager(view.layoutManager)
         textStorage.storageDelegate = self
@@ -81,7 +55,7 @@ public class OMTextManager: NSObject {
             view.textDelegate = delegate
         }
     }
-    public var view: OMUITextView
+    public var view: OMTextView
     public let state = CurrentValueSubject<OMTextState, Never>(OMTextState())
     
     let changeThrottle = PassthroughSubject<NSAttributedString, Never>()
@@ -111,6 +85,11 @@ public class OMTextManager: NSObject {
         }
         
     }
+    
+    
+    
+    #if os(iOS)
+
     public func move(cursor: CursorMovement) {
         guard view.isFirstResponder,
              let currentPosition = view.cursorPosition() else { return }
@@ -143,9 +122,14 @@ public class OMTextManager: NSObject {
            scrollToCursor()
        }
    }
+    #endif
 
+    #if os(macOS)
+    public func move(cursor: CursorMovement) {
+    }
+    #endif
     
-    
+    #if os(iOS)
     private func scrollToCursor() {
         if let currentPosition = view.cursorPosition()  {
             let cursorRect = view.caretRect(for: currentPosition)
@@ -154,7 +138,8 @@ public class OMTextManager: NSObject {
         }
     }
     
-    
+    #endif
+
     
 }
 
@@ -192,7 +177,7 @@ extension OMTextManager: OMTextStorageDelegate {
 //    }
 //}
 
-@available(iOS 16.0, *)
+#if os(iOS)
 extension OMTextManager: UITextViewDelegate {
     
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -227,3 +212,10 @@ extension OMTextManager: UITextViewDelegate {
     }
 
 }
+#endif
+
+#if os(macOS)
+extension OMTextManager: NSTextViewDelegate {
+    
+}
+#endif
