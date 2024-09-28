@@ -64,16 +64,16 @@ public protocol OMTextDelegate {
     func processChange(_ textStorage: OMTextStorage)
     
     func didStartEditing()
-    func didEndEditing(_ text: NSAttributedString)
+    func didEndEditing()
     
     func didStartFinding()
     func didEndFinding()
 
     func didChangeScroll(_ point: CGPoint)
 
-    func shouldOpenURL( _ URL: URL,
-                        in textView: NSTextView,
-                        range: NSRange) -> Bool
+    func openLink(textView: NSTextView,
+                       clickedOnLink link: Any,
+                       at charIndex: Int)
     
     
 }

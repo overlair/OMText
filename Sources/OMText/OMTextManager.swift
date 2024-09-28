@@ -216,6 +216,24 @@ extension OMTextManager: UITextViewDelegate {
 
 #if os(macOS)
 extension OMTextManager: NSTextViewDelegate {
+    public func textViewDidChangeSelection(_ notification: Notification) {
+//        delegate?.didChangeSelection(textView: textView, range: textView.selectedRange, text: textView.attributedText )
+
+    }
     
+    public func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
+        delegate?.openLink(textView: textView, clickedOnLink: link, at: charIndex) 
+        return false
+    }
+    public func textDidChange(_ notification: Notification) {
+//        delegate?.didChangeText(textView: textView, text: textView.attributedText)
+    }
+    public func textDidBeginEditing(_ notification: Notification) {
+        self.delegate?.didStartEditing()
+    }
+    
+    public func textDidEndEditing(_ notification: Notification) {
+        self.delegate?.didEndEditing()
+    }
 }
 #endif
