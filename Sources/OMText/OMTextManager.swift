@@ -221,6 +221,8 @@ extension OMTextManager: UITextViewDelegate {
 #if os(macOS)
 extension OMTextManager: NSTextViewDelegate {
     public func textViewDidChangeSelection(_ notification: Notification) {
+        guard let textView = notification.object as? NSTextView else { return }
+
 //        delegate?.didChangeSelection(textView: textView, range: textView.selectedRange, text: textView.attributedText )
 
     }
@@ -230,7 +232,8 @@ extension OMTextManager: NSTextViewDelegate {
         return false
     }
     public func textDidChange(_ notification: Notification) {
-//        delegate?.didChangeText(textView: textView, text: textView.attributedText)
+        guard let textView = notification.object as? NSTextView else { return }
+        delegate?.didChangeText(textView: textView)
     }
     public func textDidBeginEditing(_ notification: Notification) {
         self.delegate?.didStartEditing()

@@ -56,7 +56,7 @@ public extension OMTextDelegate {
 import AppKit
 public protocol OMTextDelegate {
     func didChangeSelection(textView: NSTextView,  range: NSRange, text: NSAttributedString)
-    func didChangeText(textView: NSTextView,  text: NSAttributedString)
+    func didChangeText(textView: NSTextView)
     func shouldChange(_ textView: NSTextView,
                       shouldChangeTextIn range: NSRange,
                       replacementText text: String) -> Bool
