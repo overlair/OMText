@@ -150,11 +150,11 @@ import RegexBuilder
 extension OMTextManager: OMTextStorageDelegate {
     
     public func textStorageWillBeginProcessingEdit(_ textStorage: OMTextStorage) {
-//        delegate?.processChange(textStorage)
+        delegate?.processChange(textStorage)
     }
     
     public func textStorageDidCompleteProcessingEdit(_ textStorage: OMTextStorage) {
-        delegate?.processChange(textStorage)
+//        delegate?.processChange(textStorage)
     }
 }
 
