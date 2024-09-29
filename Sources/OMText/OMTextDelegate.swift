@@ -61,7 +61,10 @@ public protocol OMTextDelegate {
                       shouldChangeTextIn range: NSRange,
                       replacementText text: String) -> Bool
     
-    func processChange(_ textStorage: OMTextStorage)
+    func processChange(_ textStorage: NSTextStorage,
+                       didProcessEditing editedMask: NSTextStorageEditActions,
+                       range editedRange: NSRange,
+                       changeInLength delta: Int)
     
     func didStartEditing()
     func didEndEditing()

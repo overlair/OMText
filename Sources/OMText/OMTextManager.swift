@@ -40,7 +40,7 @@ public class OMTextManager: NSObject {
         //        view.textStorage.removeLayoutManager(view.layoutManager)
 //        textStorage.addLayoutManager(view.layoutManager)
         textStorage.storageDelegate = self
-
+        textStorage.delegate = self
         
         changeThrottle
             .debounce(for: 0.4, scheduler: RunLoop.main)
@@ -147,10 +147,19 @@ public class OMTextManager: NSObject {
 import RegexBuilder
 
 @available(iOS 16.0, *)
+extension OMTextManager: NSTextStorageDelegate {
+    public func textStorage(_ textStorage: NSTextStorage, 
+                            didProcessEditing editedMask: NSTextStorageEditActions,
+                            range editedRange: NSRange,
+                            changeInLength delta: Int) {
+        delegate?.processChange(textStorage, didProcessEditing: editedMask, range: editedRange, changeInLength: delta)
+    }
+}
+
 extension OMTextManager: OMTextStorageDelegate {
     
     public func textStorageWillBeginProcessingEdit(_ textStorage: OMTextStorage) {
-        delegate?.processChange(textStorage)
+//        delegate?.processChange(textStorage)
     }
     
     public func textStorageDidCompleteProcessingEdit(_ textStorage: OMTextStorage) {
