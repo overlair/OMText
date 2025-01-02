@@ -146,15 +146,15 @@ public class OMTextManager: NSObject {
 
 import RegexBuilder
 
-@available(iOS 16.0, *)
-extension OMTextManager: NSTextStorageDelegate {
-    public func textStorage(_ textStorage: NSTextStorage, 
-                            didProcessEditing editedMask: NSTextStorageEditActions,
-                            range editedRange: NSRange,
-                            changeInLength delta: Int) {
-        delegate?.processChange(textStorage, didProcessEditing: editedMask, range: editedRange, changeInLength: delta)
-    }
-}
+// @available(iOS 16.0, *)
+// extension OMTextManager: NSTextStorageDelegate {
+//     public func textStorage(_ textStorage: NSTextStorage, 
+//                             didProcessEditing editedMask: NSTextStorageEditActions,
+//                             range editedRange: NSRange,
+//                             changeInLength delta: Int) {
+//         delegate?.processChange(textStorage, didProcessEditing: editedMask, range: editedRange, changeInLength: delta)
+//     }
+// }
 
 extension OMTextManager: OMTextStorageDelegate {
     
@@ -163,7 +163,7 @@ extension OMTextManager: OMTextStorageDelegate {
     }
     
     public func textStorageDidCompleteProcessingEdit(_ textStorage: OMTextStorage) {
-//        delegate?.processChange(textStorage)
+       delegate?.processChange(textStorage)
     }
 }
 
